@@ -35,14 +35,17 @@ void yyerror(const char* msg) {
 %token<valString> DESCRIPTION
 %type <valString> container_content
 
-
-
 %start S
 
 %%
-S: input
+S: input_list
 
 // Handle the input line
+
+input_list:
+    input_list input {}
+    | input {}
+
 input: 
       creation EOL {}
     | relation EOL {}
@@ -57,8 +60,8 @@ creation:
 
 // Handle the instanciation of relations between objects
 relation: 
-     NAME ARROW NAME ARROW NAME {}
-    | NAME ARROW NAME ARROW NAME COMMA DESCRIPTION {}
+     NAME ARROW NAME ARROW NAME {printf("Relacion!");}
+    | NAME ARROW NAME ARROW NAME COMMA DESCRIPTION {fprintf(outputFile, "Rel(%s, %s, \"%s\", %s)\n",$1, $5, $3, $7);}
     ;
 
 // Creation of a Person
@@ -70,15 +73,13 @@ person:
 // Creation of a Container
 container:
     CONTAINER_TAG COLON NAME COMMA OPEN_BRACKET container_content CLOSE_BRACKET {fprintf(outputFile, "Container(%s, \"%s\", \"%s\")\n",$3, $3, $6);} // Container
-    | CONTAINER_TAG COLON NAME COMMA OPEN_BRACKET container_content CLOSE_BRACKET COMMA DESCRIPTION {fprintf(outputFile, "Container(%s, \"%s\", \"%s\")\n",$3, $3, $6);} // Container  & Description
+    | CONTAINER_TAG COLON NAME COMMA OPEN_BRACKET container_content CLOSE_BRACKET COMMA DESCRIPTION {fprintf(outputFile, "Container(%s, \"%s\", \"%s\", %s)\n",$3, $3, $6, $9);} // Container  & Description
     ;
 
 container_content:
     container_content COMMA NAME { 
-        char* concatenated = malloc(strlen($1) + strlen($3) + 2); // +2 for comma and null terminator
-        strcpy(concatenated, $1);
-        strcat(concatenated, ", ");
-        strcat(concatenated, $3);
+        char* concatenated = malloc(strlen($1) + strlen($3) + 3); // +3 for comma, space, and null terminator
+        sprintf(concatenated, "%s, %s", $1, $3);
         $$ = concatenated;
     }
     | NAME { $$ = strdup($1); }

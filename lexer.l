@@ -13,6 +13,7 @@ containerTagPattern "Con"
 {descriptionPattern}    {yylval.valString = strdup(yytext); return DESCRIPTION; }
 :                       { return COLON;}
 ,                       { return COMMA; }
+"->"                    { return ARROW; }
 "["                     { return OPEN_BRACKET;}
 "]"                     { return CLOSE_BRACKET;}
 ";"                     { return EOL; }

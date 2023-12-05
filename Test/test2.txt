@@ -1,1 +1,3 @@
-Con: Contenedor, [Technology, Tech2];
+Per: Marta, "Optional Description";
+Con: Contenedor, [Technology, TE], "Optional Description";
+Marta -> Relacion -> Contenedor, "Optional Description";
