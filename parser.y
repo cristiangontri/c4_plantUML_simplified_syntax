@@ -26,6 +26,7 @@ void yyerror(const char* msg) {
 %token PERSON_TAG
 %token CONTAINER_TAG
 %token SYSTEM_TAG
+%token SYSTEM_BOUNDARY_TAG
 %token OPENING_BRACKET
 %token CLOSING_BRACKET
 %token OPEN_BRACKET
@@ -56,6 +57,7 @@ creation:
     | person {}
     | container {}
     | system {}
+    | system_boundary {}
     ;
 
 // Handle the instanciation of relations between objects
@@ -66,8 +68,12 @@ relation:
 
 // Creation of a Person
 person:
-     PERSON_TAG COLON NAME  { fprintf(outputFile, "Person(%s, \"%s\")\n",$3, $3); }
-    | PERSON_TAG COLON NAME COMMA DESCRIPTION  { fprintf(outputFile, "Person(%s, \"%s\", %s)\n",$3, $3, $5); } // Person & Description
+     PERSON_TAG COLON NAME  { 
+        fprintf(outputFile, "Person(%s, \"%s\")\n",$3, $3); 
+        }
+    | PERSON_TAG COLON NAME COMMA DESCRIPTION  {
+         fprintf(outputFile, "Person(%s, \"%s\", %s)\n",$3, $3, $5); 
+         } // Person & Description
     ;
 
 // Creation of a Container
@@ -84,10 +90,15 @@ container_content:
     }
     | NAME { $$ = strdup($1); }
 
-// Creation of a System Boundary
 system:
-     SYSTEM_TAG NAME system_content OPENING_BRACKET system_content CLOSING_BRACKET {} // System
-    | SYSTEM_TAG NAME COMMA DESCRIPTION OPENING_BRACKET system_content CLOSING_BRACKET {} // System & Description
+    SYSTEM_TAG COLON NAME {fprintf(outputFile, "System(%s, \"%s\")\n",$3, $3);}
+    | SYSTEM_TAG COLON NAME COMMA DESCRIPTION {fprintf(outputFile, "System(%s, \"%s\", %s)\n",$3, $3, $5);}
+
+
+// Creation of a System Boundary
+system_boundary:
+     SYSTEM_BOUNDARY_TAG COLON NAME OPENING_BRACKET system_content CLOSING_BRACKET {fprintf(outputFile, "System_Boundary(%s, \"%s\"){\n}\n",$3, $3);} // System
+    | SYSTEM_BOUNDARY_TAG COLON NAME COMMA DESCRIPTION OPENING_BRACKET system_content CLOSING_BRACKET {printf("Boundary!1");} // System & Description
     ;
 system_content:
      system_content COMMA creation {}
@@ -99,5 +110,6 @@ int main() {
     outputFile = fopen("C4_Result.pu", "w");
     fprintf(outputFile, "@startuml C4_Elements\n!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml\n");
     yyparse();
+    fprintf(outputFile, "@enduml");
     return 0; 
 }
