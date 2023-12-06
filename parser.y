@@ -11,6 +11,66 @@ void yyerror(const char* msg) {
     exit(0);
 }
 
+// STRING BUILDERS FOR CREATIONS ------------------------------------------------------------------------
+char* createPersonString(const char* name, const char* description) {
+    size_t length = strlen(name) + strlen(name) + ((description != NULL) ? strlen(description) : 0) + 16;
+    char* result = (char*)malloc(length);
+    if (description != NULL) {
+        sprintf(result, "Person(%s, \"%s\", %s)", name, name, description);
+    } else {
+        sprintf(result, "Person(%s, \"%s\")", name, name);
+    }
+    return result;
+}
+
+char* createContainerString(const char* name, const char* content, const char* description) {
+    size_t length = strlen(name) + strlen(name) + strlen(content) + ((description != NULL) ? strlen(description) : 0) + 16;
+    char* result = (char*)malloc(length);
+    if (description != NULL) {
+        sprintf(result, "Container(%s, \"%s\", \"%s\")", name, name, content);
+    } else {
+        sprintf(result, "Container(%s, \"%s\", \"%s\", \"%s\" )", name, name, content, description);
+    }
+    return result;
+}
+
+char* createSystemString(const char* name, const char* description) {
+    size_t length = strlen(name) + strlen(name) + ((description != NULL) ? strlen(description) : 0) + 16;
+    char* result = (char*)malloc(length);
+    if (description != NULL) {
+        sprintf(result, "System(%s, \"%s\", %s)", name, name, description);
+    } else {
+        sprintf(result, "System(%s, \"%s\")", name, name);
+    }
+    return result;
+}
+
+char* createSystemBoundaryString(const char* name, const char* description, const char* content) {
+    size_t length = strlen(name) + strlen(name) + strlen(content) + ((description != NULL) ? strlen(description) : 0) + 16;
+    char* result = (char*)malloc(length);
+    if (description != NULL) {
+        sprintf(result, "System_Boundary(%s, \"%s\", %s) {\n%s\n}\n", name, name, description, content );
+    } else {
+        sprintf(result, "System_Boundary(%s, \"%s\") {\n%s\n}\n", name, name, content );
+    }
+    return result;
+}
+// ------------------------------------------------------------------------------------------------------
+
+
+// STRING BUILDERS FOR RELATIONS ------------------------------------------------------------------------
+char* createRelationString(const char* from, const char* to, const char* name, const char* description) {
+    size_t length = strlen(name) + strlen(name) + strlen(from) + strlen(to) + ((description != NULL) ? strlen(description) : 0) + 16;
+    char* result = (char*)malloc(length);
+    if (description != NULL) {
+        sprintf(result, "Rel(%s, %s, \"%s\", %s)", from, to , name, description);
+    } else {
+        sprintf(result, "Rel(%s, %s, \"%s\")", from, to , name);
+    }
+    return result;
+}
+// ------------------------------------------------------------------------------------------------------
+
 %}
 
 %union {
@@ -35,6 +95,14 @@ void yyerror(const char* msg) {
 %token<valString> NAME
 %token<valString> DESCRIPTION
 %type <valString> container_content
+%type<valString> person
+%type<valString> container
+%type<valString> system
+%type<valString> system_boundary
+%type<valString> system_content
+%type<valString> creation
+%type<valString> relation
+
 
 %start S
 
@@ -48,61 +116,85 @@ input_list:
     | input {}
 
 input: 
-      creation EOL {}
-    | relation EOL {}
+      creation EOL { fprintf(outputFile, "%s\n", $1); }
+    | relation EOL { fprintf(outputFile, "%s\n", $1); }
     ;
 
 // Handle the creation of objects
 creation:
-    | person {}
-    | container {}
-    | system {}
-    | system_boundary {}
+      person { $$ = $1; }
+    | container { $$ = $1; }
+    | system { $$ = $1; }
+    | system_boundary { $$ = $1; }
     ;
 
 // Handle the instanciation of relations between objects
 relation: 
-     NAME ARROW NAME ARROW NAME {printf("Relacion!");}
-    | NAME ARROW NAME ARROW NAME COMMA DESCRIPTION {fprintf(outputFile, "Rel(%s, %s, \"%s\", %s)\n",$1, $5, $3, $7);}
+     NAME ARROW NAME ARROW NAME {
+        $$ = createRelationString($1, $5, $3, NULL);
+     }
+    | NAME ARROW NAME ARROW NAME COMMA DESCRIPTION {
+        $$ = createRelationString($1, $5, $3, $7);
+    }
     ;
 
 // Creation of a Person
 person:
      PERSON_TAG COLON NAME  { 
-        fprintf(outputFile, "Person(%s, \"%s\")\n",$3, $3); 
-        }
+        $$ = createPersonString($3, NULL);
+    }
     | PERSON_TAG COLON NAME COMMA DESCRIPTION  {
-         fprintf(outputFile, "Person(%s, \"%s\", %s)\n",$3, $3, $5); 
-         } // Person & Description
+        $$ = createPersonString($3, $5);
+    } // Person & Description
     ;
 
 // Creation of a Container
 container:
-    CONTAINER_TAG COLON NAME COMMA OPEN_BRACKET container_content CLOSE_BRACKET {fprintf(outputFile, "Container(%s, \"%s\", \"%s\")\n",$3, $3, $6);} // Container
-    | CONTAINER_TAG COLON NAME COMMA OPEN_BRACKET container_content CLOSE_BRACKET COMMA DESCRIPTION {fprintf(outputFile, "Container(%s, \"%s\", \"%s\", %s)\n",$3, $3, $6, $9);} // Container  & Description
+    CONTAINER_TAG COLON NAME COMMA OPEN_BRACKET container_content CLOSE_BRACKET {
+        $$ = createContainerString($3, $6, NULL);
+    } // Container
+    | CONTAINER_TAG COLON NAME COMMA OPEN_BRACKET container_content CLOSE_BRACKET COMMA DESCRIPTION {
+        $$ = createContainerString($3, $6, $9);
+    } // Container  & Description
     ;
 
 container_content:
     container_content COMMA NAME { 
-        char* concatenated = malloc(strlen($1) + strlen($3) + 3); // +3 for comma, space, and null terminator
+        char* concatenated = malloc(strlen($1) + strlen($3) + 3); 
         sprintf(concatenated, "%s, %s", $1, $3);
         $$ = concatenated;
     }
     | NAME { $$ = strdup($1); }
 
 system:
-    SYSTEM_TAG COLON NAME {fprintf(outputFile, "System(%s, \"%s\")\n",$3, $3);}
-    | SYSTEM_TAG COLON NAME COMMA DESCRIPTION {fprintf(outputFile, "System(%s, \"%s\", %s)\n",$3, $3, $5);}
+    SYSTEM_TAG COLON NAME {
+        $$ = createSystemString($3, NULL);
+    }
+    | SYSTEM_TAG COLON NAME COMMA DESCRIPTION {
+        $$ = createSystemString($3, $5);
+    }
 
 
 // Creation of a System Boundary
 system_boundary:
-     SYSTEM_BOUNDARY_TAG COLON NAME OPENING_BRACKET system_content CLOSING_BRACKET {fprintf(outputFile, "System_Boundary(%s, \"%s\"){\n}\n",$3, $3);} // System
-    | SYSTEM_BOUNDARY_TAG COLON NAME COMMA DESCRIPTION OPENING_BRACKET system_content CLOSING_BRACKET {printf("Boundary!1");} // System & Description
+     SYSTEM_BOUNDARY_TAG COLON NAME OPENING_BRACKET system_content CLOSING_BRACKET {
+        $$ = createSystemBoundaryString($3, NULL, $5);
+    } // System
+    | SYSTEM_BOUNDARY_TAG COLON NAME COMMA DESCRIPTION OPENING_BRACKET system_content CLOSING_BRACKET {
+        $$ = createSystemBoundaryString($3, $5, $7);
+    } // System & Description
     ;
 system_content:
-     system_content COMMA creation {}
-    | creation {}
+     system_content COMMA creation {
+        char* concatenated = malloc(strlen($1) + strlen($3) + 3); 
+        sprintf(concatenated, "%s\n\t%s", $1, $3);
+        $$ = concatenated;
+     }
+    | creation { 
+        char* concatenated = malloc(strlen($1) + 3); 
+        sprintf(concatenated, "\t%s", $1);
+        $$ = concatenated;
+    }
     ;
 %%
 
