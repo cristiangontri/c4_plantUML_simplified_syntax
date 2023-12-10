@@ -4,12 +4,10 @@
 #include <string.h>
 extern int yylex();
 extern int yyabort();
-int line = 1;
+int instance = 0;
+char instances[100][20];
 FILE *outputFile;
-void yyerror(const char* msg) {
-    fprintf(stderr, "\033[31mError na liña %d:\033[0m %s\n", line, msg);
-    exit(0);
-}
+
 
 // STRING BUILDERS FOR CREATIONS ------------------------------------------------------------------------
 char* createPersonString(const char* name, const char* description) {
@@ -49,9 +47,9 @@ char* createSystemBoundaryString(const char* name, const char* description, cons
     size_t length = strlen(name) + strlen(name) + strlen(content) + ((description != NULL) ? strlen(description) : 0) + 16;
     char* result = (char*)malloc(length);
     if (description != NULL) {
-        sprintf(result, "System_Boundary(%s, \"%s\", %s) {\n%s\n}\n", name, name, description, content );
+        sprintf(result, "System_Boundary(%s, \"%s\", %s) {\n%s\n}", name, name, description, content );
     } else {
-        sprintf(result, "System_Boundary(%s, \"%s\") {\n%s\n}\n", name, name, content );
+        sprintf(result, "System_Boundary(%s, \"%s\") {\n%s\n}", name, name, content );
     }
     return result;
 }
@@ -71,6 +69,25 @@ char* createRelationString(const char* from, const char* to, const char* name, c
 }
 // ------------------------------------------------------------------------------------------------------
 
+// ERRORS -----------------------------------------------------------------------------------------------
+void yyerror(const char* msg) {
+    fprintf(stderr, "\033[31mError at declaration number %d:\033[0m %s\n", (instance + 1), msg);
+    exit(0);
+}
+
+void newInstance(const char* creation, const char* name) {
+    char error_msg[200];
+    for (int i = 0; i< 100; i++) {
+        if(strcmp(instances[i], name) == 0) {
+            sprintf(error_msg, "You are trying to create a %s with a name (%s) that is already being used.", creation, name);
+            yyerror(error_msg);
+        }
+    }
+     
+    strcpy(instances[instance], name);
+    instance++;
+}
+// ------------------------------------------------------------------------------------------------------
 %}
 
 %union {
@@ -117,7 +134,7 @@ input_list:
 
 input: 
       creation EOL { fprintf(outputFile, "%s\n", $1); }
-    | relation EOL { fprintf(outputFile, "%s\n", $1); }
+    | relation EOL { fprintf(outputFile, "%s\n", $1); instance++; }
     ;
 
 // Handle the creation of objects
@@ -141,9 +158,11 @@ relation:
 // Creation of a Person
 person:
      PERSON_TAG COLON NAME  { 
+        newInstance("Person", $3);
         $$ = createPersonString($3, NULL);
     }
     | PERSON_TAG COLON NAME COMMA DESCRIPTION  {
+        newInstance("Person", $3);
         $$ = createPersonString($3, $5);
     } // Person & Description
     ;
@@ -151,9 +170,11 @@ person:
 // Creation of a Container
 container:
     CONTAINER_TAG COLON NAME COMMA OPEN_BRACKET container_content CLOSE_BRACKET {
+        newInstance("Container", $3);
         $$ = createContainerString($3, $6, NULL);
     } // Container
     | CONTAINER_TAG COLON NAME COMMA OPEN_BRACKET container_content CLOSE_BRACKET COMMA DESCRIPTION {
+        newInstance("Container", $3);
         $$ = createContainerString($3, $6, $9);
     } // Container  & Description
     ;
@@ -168,9 +189,11 @@ container_content:
 
 system:
     SYSTEM_TAG COLON NAME {
+        newInstance("System", $3);
         $$ = createSystemString($3, NULL);
     }
     | SYSTEM_TAG COLON NAME COMMA DESCRIPTION {
+        newInstance("System", $3);
         $$ = createSystemString($3, $5);
     }
 
@@ -178,9 +201,11 @@ system:
 // Creation of a System Boundary
 system_boundary:
      SYSTEM_BOUNDARY_TAG COLON NAME OPENING_BRACKET system_content CLOSING_BRACKET {
+        newInstance("System_Boundary", $3);
         $$ = createSystemBoundaryString($3, NULL, $5);
     } // System
     | SYSTEM_BOUNDARY_TAG COLON NAME COMMA DESCRIPTION OPENING_BRACKET system_content CLOSING_BRACKET {
+        newInstance("System_Boundary", $3);
         $$ = createSystemBoundaryString($3, $5, $7);
     } // System & Description
     ;
@@ -199,7 +224,25 @@ system_content:
 %%
 
 int main() {
-    outputFile = fopen("C4_Result.pu", "w");
+    char filename[20] = "C4_Result.pu";
+    char newFilename[20];
+    int count = 1;
+
+    // Check if the file already exists
+    while ((outputFile = fopen(filename, "r")) != NULL) {
+        fclose(outputFile);
+        // If it exists, create a new filename with a number
+        snprintf(newFilename, sizeof(newFilename), "C4_Result_%d.pu", count);
+        count++;
+        strcpy(filename, newFilename); // Update the filename for the next iteration
+    }
+
+    // Create or open the file for writing
+    outputFile = fopen(filename, "w");
+    if (outputFile == NULL) {
+        fprintf(stderr, "Error opening file for writing.\n");
+        return 1;
+    }
     fprintf(outputFile, "@startuml C4_Elements\n!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml\n");
     yyparse();
     fprintf(outputFile, "@enduml");
