@@ -24,10 +24,10 @@ char* createPersonString(const char* name, const char* description) {
 char* createContainerString(const char* name, const char* content, const char* description) {
     size_t length = strlen(name) + strlen(name) + strlen(content) + ((description != NULL) ? strlen(description) : 0) + 16;
     char* result = (char*)malloc(length);
-    if (description != NULL) {
+    if (description == NULL) {
         sprintf(result, "Container(%s, \"%s\", \"%s\")", name, name, content);
     } else {
-        sprintf(result, "Container(%s, \"%s\", \"%s\", \"%s\" )", name, name, content, description);
+        sprintf(result, "Container(%s, \"%s\", \"%s\", %s )", name, name, content, description);
     }
     return result;
 }
@@ -85,7 +85,6 @@ void newInstance(const char* creation, const char* name) {
     }
      
     strcpy(instances[instance], name);
-    instance++;
 }
 // ------------------------------------------------------------------------------------------------------
 %}
@@ -133,8 +132,13 @@ input_list:
     | input {}
 
 input: 
-      creation EOL { fprintf(outputFile, "%s\n", $1); }
+      creation EOL { fprintf(outputFile, "%s\n", $1); instance++;}
     | relation EOL { fprintf(outputFile, "%s\n", $1); instance++; }
+    | creation {
+        char error_msg[200];
+        sprintf(error_msg, "Missing missing a ;");
+        yyerror(error_msg);
+    }
     ;
 
 // Handle the creation of objects
@@ -210,15 +214,25 @@ system_boundary:
     } // System & Description
     ;
 system_content:
-     system_content COMMA creation {
-        char* concatenated = malloc(strlen($1) + strlen($3) + 3); 
-        sprintf(concatenated, "%s\n\t%s", $1, $3);
+     system_content creation EOL { 
+        char* concatenated = malloc(strlen($1) + strlen($2) + 3); 
+        sprintf(concatenated, "%s\n\t%s", $1, $2);
         $$ = concatenated;
      }
-    | creation { 
+    | creation EOL { 
         char* concatenated = malloc(strlen($1) + 3); 
         sprintf(concatenated, "\t%s", $1);
         $$ = concatenated;
+    }
+    | system_content creation { 
+        char error_msg[200];
+        sprintf(error_msg, "Missing missing a ;");
+        yyerror(error_msg);
+     }
+    | creation { 
+        char error_msg[200];
+        sprintf(error_msg, "Missing missing a ;");
+        yyerror(error_msg);
     }
     ;
 %%
