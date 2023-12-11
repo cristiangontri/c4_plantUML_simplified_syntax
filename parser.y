@@ -107,7 +107,11 @@ void newInstance(const char* creation, const char* name) {
 %token CLOSING_BRACKET
 %token OPEN_BRACKET
 %token CLOSE_BRACKET
+%token INCLUDE 
+%token SPRITE
+%token EQ
 
+%token<valString> URL
 %token<valString> NAME
 %token<valString> DESCRIPTION
 %type <valString> container_content
@@ -118,6 +122,7 @@ void newInstance(const char* creation, const char* name) {
 %type<valString> system_content
 %type<valString> creation
 %type<valString> relation
+%type<valString> sprite
 
 
 %start S
@@ -134,9 +139,20 @@ input_list:
 input: 
       creation EOL { fprintf(outputFile, "%s\n", $1); instance++;}
     | relation EOL { fprintf(outputFile, "%s\n", $1); instance++; }
+    | creation COMMA {
+        char error_msg[200];
+        sprintf(error_msg, "Extra argument or intrusive COMMA in declaration.");
+        yyerror(error_msg);
+    }
     | creation {
         char error_msg[200];
         sprintf(error_msg, "Missing missing a ;");
+        yyerror(error_msg);
+    }
+    | INCLUDE COLON URL { fprintf(outputFile, "!include %s\n", $3); }
+    | INCLUDE COLON URL EOL { 
+        char error_msg[200];
+        sprintf(error_msg, "Includes do not need ; at the end");
         yyerror(error_msg);
     }
     ;
@@ -235,6 +251,8 @@ system_content:
         yyerror(error_msg);
     }
     ;
+sprite: 
+    SPRITE EQ NAME { $$ = $3; }
 %%
 
 int main() {
