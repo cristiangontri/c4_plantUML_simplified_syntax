@@ -8,9 +8,39 @@ int instance = 0;
 char instances[100][20];
 FILE *outputFile;
 
+// ERRORS -----------------------------------------------------------------------------------------------
+void yyerror(const char* msg) {
+    fprintf(stderr, "\033[31mError at declaration number %d:\033[0m %s\n", (instance + 1), msg);
+    exit(0);
+}
+
+void newInstance(const char* creation, const char* name) {
+    char error_msg[200];
+    for (int i = 0; i< 100; i++) {
+        if(strcmp(instances[i], name) == 0) {
+            sprintf(error_msg, "You are trying to create a %s with a name (%s) that is already being used.", creation, name);
+            yyerror(error_msg);
+        }
+    }
+    strcpy(instances[instance], name);
+}
+
+void missingEOL() {
+    char error_msg[200];
+    sprintf(error_msg, "Missing missing a ;");
+    yyerror(error_msg);
+}
+
+void boundaryWithSprite() {
+    char error_msg[200];
+    sprintf(error_msg, "System Boundaries cannot have sprites assigned");
+    yyerror(error_msg);
+}
+// ------------------------------------------------------------------------------------------------------
 
 // STRING BUILDERS FOR CREATIONS ------------------------------------------------------------------------
 char* createPersonString(const char* name, const char* description) {
+    newInstance("Person", name);
     size_t length = strlen(name) + strlen(name) + ((description != NULL) ? strlen(description) : 0) + 16;
     char* result = (char*)malloc(length);
     if (description != NULL) {
@@ -22,6 +52,7 @@ char* createPersonString(const char* name, const char* description) {
 }
 
 char* createContainerString(const char* name, const char* content, const char* description) {
+    newInstance("Container", name);
     size_t length = strlen(name) + strlen(name) + strlen(content) + ((description != NULL) ? strlen(description) : 0) + 16;
     char* result = (char*)malloc(length);
     if (description == NULL) {
@@ -33,6 +64,7 @@ char* createContainerString(const char* name, const char* content, const char* d
 }
 
 char* createSystemString(const char* name, const char* description) {
+    newInstance("System", name);
     size_t length = strlen(name) + strlen(name) + ((description != NULL) ? strlen(description) : 0) + 16;
     char* result = (char*)malloc(length);
     if (description != NULL) {
@@ -44,6 +76,7 @@ char* createSystemString(const char* name, const char* description) {
 }
 
 char* createSystemBoundaryString(const char* name, const char* description, const char* content) {
+    newInstance("System_Boundary", name);
     size_t length = strlen(name) + strlen(name) + strlen(content) + ((description != NULL) ? strlen(description) : 0) + 16;
     char* result = (char*)malloc(length);
     if (description != NULL) {
@@ -52,6 +85,12 @@ char* createSystemBoundaryString(const char* name, const char* description, cons
         sprintf(result, "System_Boundary(%s, \"%s\") {\n%s\n}", name, name, content );
     }
     return result;
+}
+
+char* createSpriteString(const char* name) {
+    char* concatenated = malloc(strlen(name) + 3); 
+    sprintf(concatenated, "\"%s\"", name);
+    return concatenated;
 }
 
 char* addSprite(const char* body, const char* sprt) {
@@ -82,30 +121,20 @@ char* createRelationString(const char* from, const char* to, const char* name, c
 }
 // ------------------------------------------------------------------------------------------------------
 
-// ERRORS -----------------------------------------------------------------------------------------------
-void yyerror(const char* msg) {
-    fprintf(stderr, "\033[31mError at declaration number %d:\033[0m %s\n", (instance + 1), msg);
-    exit(0);
-}
-
-void newInstance(const char* creation, const char* name) {
-    char error_msg[200];
-    for (int i = 0; i< 100; i++) {
-        if(strcmp(instances[i], name) == 0) {
-            sprintf(error_msg, "You are trying to create a %s with a name (%s) that is already being used.", creation, name);
-            yyerror(error_msg);
-        }
+// STRING BUILDERS FOR DEFINITIONS ----------------------------------------------------------------------
+char* createDefinitionString(char* name, char* url) {
+    if ( name == NULL ) {
+        char* concatenated = malloc(strlen(url) + 10); 
+        sprintf(concatenated, "!include %s", url);
+        return concatenated;
+    } else {
+        char* concatenated = malloc(strlen(name) + strlen(url) + 10); 
+        sprintf(concatenated, "!define %s %s", name, url);
+        return concatenated;
     }
-     
-    strcpy(instances[instance], name);
-}
-
-void missingEOL() {
-    char error_msg[200];
-    sprintf(error_msg, "Missing missing a ;");
-    yyerror(error_msg);
 }
 // ------------------------------------------------------------------------------------------------------
+
 %}
 
 %union {
@@ -156,79 +185,51 @@ S: input_list
 
 // Handle the input line
 input_list:
-    input_list input EOL { instance++; }
-    | input_list input { missingEOL(); }
-    | input EOL { instance++; }
-    | input { missingEOL(); }
+      input_list input EOL  { instance++;   }
+    | input_list input      { missingEOL(); }
+    | input EOL             { instance++;   }
+    | input                 { missingEOL(); }
 
 input: 
-      creation { fprintf(outputFile, "%s\n", $1); }
-    | relation { fprintf(outputFile, "%s\n", $1);  }
-    | definition { fprintf(outputFile, "%s\n", $1); }
+      creation      { fprintf(outputFile, "%s\n", $1); }
+    | relation      { fprintf(outputFile, "%s\n", $1); }
+    | definition    { fprintf(outputFile, "%s\n", $1); }
     ;
 
 // Handle definitions and includes
 definition:
-    INCLUDE COLON URL { 
-        char* concatenated = malloc(strlen($3) + 10); 
-        sprintf(concatenated, "!include %s", $3);
-        $$ = concatenated;
-      }
-    | DEFINE COLON NAME URL {
-        char* concatenated = malloc(strlen($3) + strlen($4) + 10); 
-        sprintf(concatenated, "!define %s %s", $3, $4);
-        $$ = concatenated;
-    }
+      INCLUDE COLON URL     { $$ = createDefinitionString(NULL, $3); }
+    | DEFINE COLON NAME URL { $$ = createDefinitionString($3, $4);   }
 
 
 // Handle the creation of objects
 creation:
-      person { $$ = $1; }
-    | person UP_BAR sprite { $$ = addSprite($1, $3); }
-    | container { $$ = $1; }
-    | container UP_BAR sprite { $$ = addSprite($1, $3); }
-    | system { $$ = $1; }
-    | system UP_BAR sprite { $$ = addSprite($1, $3); }
-    | system_boundary { $$ = $1; }
-    | system_boundary UP_BAR sprite {
-        char error_msg[200];
-        sprintf(error_msg, "System Boundaries cannot have sprites assigned");
-        yyerror(error_msg);
-    }
+      person                        { $$ = $1;                }
+    | person UP_BAR sprite          { $$ = addSprite($1, $3); }
+    | container                     { $$ = $1;                }
+    | container UP_BAR sprite       { $$ = addSprite($1, $3); }
+    | system                        { $$ = $1;                }
+    | system UP_BAR sprite          { $$ = addSprite($1, $3); }
+    | system_boundary               { $$ = $1;                }
+    | system_boundary UP_BAR sprite { boundaryWithSprite();   }
     ;
 
 // Handle the instanciation of relations between objects
 relation: 
-     NAME ARROW NAME ARROW NAME {
-        $$ = createRelationString($1, $5, $3, NULL);
-     }
-    | NAME ARROW NAME ARROW NAME COMMA DESCRIPTION {
-        $$ = createRelationString($1, $5, $3, $7);
-    }
+      NAME ARROW NAME ARROW NAME                     { $$ = createRelationString($1, $5, $3, NULL); }
+    | NAME ARROW NAME ARROW NAME COMMA DESCRIPTION   { $$ = createRelationString($1, $5, $3, $7);   }
     ;
 
-// Creation of a Person
+// Handle creation of a Person
 person:
-     PERSON_TAG COLON NAME  { 
-        newInstance("Person", $3);
-        $$ = createPersonString($3, NULL);
-    }
-    | PERSON_TAG COLON NAME COMMA DESCRIPTION  {
-        newInstance("Person", $3);
-        $$ = createPersonString($3, $5);
-    } // Person & Description
+      PERSON_TAG COLON NAME                      { $$ = createPersonString($3, NULL); } // Person
+    | PERSON_TAG COLON NAME COMMA DESCRIPTION    { $$ = createPersonString($3, $5);   } // Person & Description
     ;
 
-// Creation of a Container
+// Handle creation of a Container
 container:
-    CONTAINER_TAG COLON NAME COMMA OPEN_BRACKET container_content CLOSE_BRACKET {
-        newInstance("Container", $3);
-        $$ = createContainerString($3, $6, NULL);
-    } // Container
-    | CONTAINER_TAG COLON NAME COMMA OPEN_BRACKET container_content CLOSE_BRACKET COMMA DESCRIPTION {
-        newInstance("Container", $3);
-        $$ = createContainerString($3, $6, $9);
-    } // Container  & Description
+      CONTAINER_TAG COLON NAME COMMA OPEN_BRACKET container_content CLOSE_BRACKET                   { $$ = createContainerString($3, $6, NULL); } // Container
+    | CONTAINER_TAG COLON NAME COMMA OPEN_BRACKET container_content CLOSE_BRACKET COMMA DESCRIPTION { $$ = createContainerString($3, $6, $9);   } // Container  & Description
     ;
 
 container_content:
@@ -239,56 +240,35 @@ container_content:
     }
     | NAME { $$ = strdup($1); }
 
+// Handle creation of a System
 system:
-    SYSTEM_TAG COLON NAME {
-        newInstance("System", $3);
-        $$ = createSystemString($3, NULL);
-    }
-    | SYSTEM_TAG COLON NAME COMMA DESCRIPTION {
-        newInstance("System", $3);
-        $$ = createSystemString($3, $5);
-    }
+      SYSTEM_TAG COLON NAME                   { $$ = createSystemString($3, NULL); } // System
+    | SYSTEM_TAG COLON NAME COMMA DESCRIPTION { $$ = createSystemString($3, $5);   } // System & Description
 
 
-// Creation of a System Boundary
+// Handle creation of a System Boundary
 system_boundary:
-     SYSTEM_BOUNDARY_TAG COLON NAME OPENING_BRACKET system_content CLOSING_BRACKET {
-        newInstance("System_Boundary", $3);
-        $$ = createSystemBoundaryString($3, NULL, $5);
-    } // System
-    | SYSTEM_BOUNDARY_TAG COLON NAME COMMA DESCRIPTION OPENING_BRACKET system_content CLOSING_BRACKET {
-        newInstance("System_Boundary", $3);
-        $$ = createSystemBoundaryString($3, $5, $7);
-    } // System & Description
+     SYSTEM_BOUNDARY_TAG COLON NAME OPENING_BRACKET system_content CLOSING_BRACKET                    { $$ = createSystemBoundaryString($3, NULL, $5); } // System
+    | SYSTEM_BOUNDARY_TAG COLON NAME COMMA DESCRIPTION OPENING_BRACKET system_content CLOSING_BRACKET { $$ = createSystemBoundaryString($3, $5, $7);   } // System & Description
     ;
 system_content:
-     system_content creation EOL { 
+      system_content creation EOL { 
         char* concatenated = malloc(strlen($1) + strlen($2) + 3); 
         sprintf(concatenated, "%s\n\t%s", $1, $2);
         $$ = concatenated;
-     }
+    }
     | creation EOL { 
         char* concatenated = malloc(strlen($1) + 3); 
         sprintf(concatenated, "\t%s", $1);
         $$ = concatenated;
     }
-    | system_content creation { 
-        char error_msg[200];
-        sprintf(error_msg, "Missing missing a ;");
-        yyerror(error_msg);
-     }
-    | creation { 
-        char error_msg[200];
-        sprintf(error_msg, "Missing missing a ;");
-        yyerror(error_msg);
-    }
+    | system_content creation { missingEOL(); }
+    | creation                { missingEOL(); }
     ;
+
+// Handle creation of a Sprite
 sprite: 
-    SPRITE EQ NAME { 
-        char* concatenated = malloc(strlen($3) + 3); 
-        sprintf(concatenated, "\"%s\"", $3);
-        $$ = concatenated;
-    }
+    SPRITE EQ NAME { $$ = createSpriteString($3); }
 %%
 
 int main() {
