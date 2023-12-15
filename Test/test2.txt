@@ -1,9 +1,12 @@
-include: http://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml;
-Per: Marta;
-Con: Contenedor, [Technology, TE], "Optional Description";
-Boun: sis {
-    Per: Darta;
-    Con: Pontenedor, [Technology, TE], "Optional Description";
-};
-Sys: Sistema, "Optional Description";
-Marta -> Relacion -> Contenedor, "Optional Description";
+define: DEVICONS <https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/devicons>;
+define: FONTAWESOME <https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/font-awesome-5>;
+include: <DEVICONS/angular.puml>;
+include: <DEVICONS/java.puml>;
+include: <DEVICONS/msql_server.puml>;
+include: <FONTAWESOME/users.puml>;
+
+Per: Customer, "People that need products" | sprite=users;
+Con: SPA, [angular], "The main interface that the customer interacts with" | sprite=angular;
+Con: API, [java], "Handles all business logic" | sprite=java;
+Customer -> Uses -> SPA, "https";
+SPA -> Uses -> API, "https";

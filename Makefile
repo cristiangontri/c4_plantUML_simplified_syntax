@@ -7,7 +7,7 @@ all: compile run
 
 compile:
 	flex $(LEXER).l
-	bison -o $(PARSER).tab.c $(PARSER).y -yd
+	bison -o $(PARSER).tab.c $(PARSER).y -yd 
 	gcc -o $(OUT) lex.yy.c $(PARSER).tab.c -ll -ly
 run:
 	$(info **************  Analizando Ficheiros  *************)

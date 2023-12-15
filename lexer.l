@@ -8,13 +8,20 @@ personTagPattern "Per"
 containerTagPattern "Con"
 systemTagPattern "Sys"
 systemBoundaryTagPattern "Boun"
-urlSecurePattern "https:\/\/"[^\0;]+
-urlNotSecurePattern "http:\/\/"[^\0;]+
+urlPattern <[^;<>]+>
 includePattern "include"
+spritePattern "sprite"
+definePattern "define"
+
 %%
+{definePattern}         { return DEFINE; }
+{spritePattern}         { return SPRITE; }
 {includePattern}        { return INCLUDE; }
-{urlSecurePattern}      { yylval.valString = strdup(yytext); return URL; }
-{urlNotSecurePattern}   { yylval.valString = strdup(yytext); return URL; }
+{urlPattern}            { 
+                            yytext[strlen(yytext) - 1] = '\0';
+                            yylval.valString = strdup(yytext + 1); 
+                            return URL;  return URL; 
+                        }
 {personTagPattern}      { return PERSON_TAG; }
 {containerTagPattern}   { return CONTAINER_TAG; }
 {systemTagPattern}      { return SYSTEM_TAG; }
@@ -23,6 +30,8 @@ includePattern "include"
 {descriptionPattern}    {yylval.valString = strdup(yytext); return DESCRIPTION; }
 :                       { return COLON;}
 ,                       { return COMMA; }
+"|"                     { return UP_BAR; }
+"="                     { return EQ; }
 "->"                    { return ARROW; }
 "["                     { return OPEN_BRACKET; }
 "]"                     { return CLOSE_BRACKET; }

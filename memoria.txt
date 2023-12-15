@@ -1,0 +1,61 @@
+Memoria C4_PLANTUML_SIMPLIFIED_SYNTAX
+
+Idea del Proyecto
+
+El proyecto busca crear una sintaxis más simple a la actual para generar diagramas C4 mediante el uso de PlantUML. PlantUML es una tecnología que permite crear diagramas escribiendo en un documento de texto. Su sintaxis contiene abundantes paréntesis, además de alguna estructura que puede crear confusión.
+Por ejemplo -> Una relación entre dos entidades:
+
+- PlantUML -> Rel(ent1, ent2, "Nombre relación")
+- Sintaxis de este proyecto -> Rel: ent1 -> Nombre_Relación -> ent2
+
+Con la nueva sintaxis entendemos, desde el primer vistazo, qué queremos representar con la línea de código. Con la sintaxis original pueden surgir dudas ( ¿De qué entidad a qué entidad va la relación?).
+Como los diagramas C4 tienen una infinidad de elementos, el proyecto se ha acotado para incluir los más relevantes. 
+Actualmente el proyecto contempla la creación de las siguientes entidades:
+
+Defines -> define: DEVICONS <https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/devicons>;
+
+Includes -> include: <DEVICONS/java.puml>;
+
+Personas -> Per: Marta, "Descripcion Opcional";
+
+Contenedores -> Con: Nombre_Contenedor, [Contenido], "Descripcion Opcional", sprite=icono_opcional;
+
+Sistemas -> Sys: Nombre_Sistema, "Descripcion Opcional";
+
+Fronteras de Sistema -> Boun: Nombre_Frontera {
+                            Per: Marta;
+                            Con: Nombre_Contenedor, [Contenido], "Descripcion Opcional";
+                        };
+
+EJEMPLO DE EJECUCIÓN:
+
+- Sintaxis Original:
+@startuml C4_Elements
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+!define DEVICONS https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/devicons
+!define FONTAWESOME https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/font-awesome-5
+!include DEVICONS/angular.puml
+!include DEVICONS/java.puml
+!include DEVICONS/msql_server.puml
+!include FONTAWESOME/users.puml
+Person(Customer, "Customer", "People that need products", $sprite="users")
+Container(SPA, "SPA", "angular", "The main interface that the customer interacts with" , $sprite="angular")
+Container(API, "API", "java", "Handles all business logic" , $sprite="java")
+Rel(Customer, SPA, "Uses", "https")
+Rel(SPA, API, "Uses", "https")
+@enduml
+
+- Nueva Sintaxis:
+define: DEVICONS <https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/devicons>;
+define: FONTAWESOME <https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/font-awesome-5>;
+include: <DEVICONS/angular.puml>;
+include: <DEVICONS/java.puml>;
+include: <DEVICONS/msql_server.puml>;
+include: <FONTAWESOME/users.puml>;
+Per: Customer, "People that need products" | sprite=users;
+Con: SPA, [angular], "The main interface that the customer interacts with" | sprite=angular;
+Con: API, [java], "Handles all business logic" | sprite=java;
+Customer -> Uses -> SPA, "https";
+SPA -> Uses -> API, "https";
+
+EN ESTE EJEMPLO LA NUEVA SINTAXIS SUPONE UN 12,49% DE REDUCCIÓN DE CÓDIGO EN COMPARACIÓN CON LA ORIGINAL.

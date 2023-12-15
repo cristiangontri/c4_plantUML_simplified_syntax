@@ -53,6 +53,19 @@ char* createSystemBoundaryString(const char* name, const char* description, cons
     }
     return result;
 }
+
+char* addSprite(const char* body, const char* sprt) {
+    if (strlen(body) > 0) {
+        char* result = (char*)malloc(strlen (body) + strlen(", ") + strlen(sprt) + 1);
+        strncpy(result, body, strlen (body) - 1);
+        strcat(result, ", $sprite=");
+        strcat(result, sprt);
+        strcat(result, ")");
+        return result;
+    } else {
+        return strdup(sprt);
+    }
+}
 // ------------------------------------------------------------------------------------------------------
 
 
@@ -86,6 +99,12 @@ void newInstance(const char* creation, const char* name) {
      
     strcpy(instances[instance], name);
 }
+
+void missingEOL() {
+    char error_msg[200];
+    sprintf(error_msg, "Missing missing a ;");
+    yyerror(error_msg);
+}
 // ------------------------------------------------------------------------------------------------------
 %}
 
@@ -108,9 +127,14 @@ void newInstance(const char* creation, const char* name) {
 %token OPEN_BRACKET
 %token CLOSE_BRACKET
 %token INCLUDE 
+%token DEFINE
 %token SPRITE
 %token EQ
+%token OPEN_URL
+%token CLOSE_URL
+%token UP_BAR
 
+%token<valString> UPPERCASE
 %token<valString> URL
 %token<valString> NAME
 %token<valString> DESCRIPTION
@@ -123,7 +147,7 @@ void newInstance(const char* creation, const char* name) {
 %type<valString> creation
 %type<valString> relation
 %type<valString> sprite
-
+%type<valString> definition
 
 %start S
 
@@ -131,38 +155,46 @@ void newInstance(const char* creation, const char* name) {
 S: input_list
 
 // Handle the input line
-
 input_list:
-    input_list input {}
-    | input {}
+    input_list input EOL { instance++; }
+    | input_list input { missingEOL(); }
+    | input EOL { instance++; }
+    | input { missingEOL(); }
 
 input: 
-      creation EOL { fprintf(outputFile, "%s\n", $1); instance++;}
-    | relation EOL { fprintf(outputFile, "%s\n", $1); instance++; }
-    | creation COMMA {
-        char error_msg[200];
-        sprintf(error_msg, "Extra argument or intrusive COMMA in declaration.");
-        yyerror(error_msg);
-    }
-    | creation {
-        char error_msg[200];
-        sprintf(error_msg, "Missing missing a ;");
-        yyerror(error_msg);
-    }
-    | INCLUDE COLON URL { fprintf(outputFile, "!include %s\n", $3); }
-    | INCLUDE COLON URL EOL { 
-        char error_msg[200];
-        sprintf(error_msg, "Includes do not need ; at the end");
-        yyerror(error_msg);
-    }
+      creation { fprintf(outputFile, "%s\n", $1); }
+    | relation { fprintf(outputFile, "%s\n", $1);  }
+    | definition { fprintf(outputFile, "%s\n", $1); }
     ;
+
+// Handle definitions and includes
+definition:
+    INCLUDE COLON URL { 
+        char* concatenated = malloc(strlen($3) + 10); 
+        sprintf(concatenated, "!include %s", $3);
+        $$ = concatenated;
+      }
+    | DEFINE COLON NAME URL {
+        char* concatenated = malloc(strlen($3) + strlen($4) + 10); 
+        sprintf(concatenated, "!define %s %s", $3, $4);
+        $$ = concatenated;
+    }
+
 
 // Handle the creation of objects
 creation:
       person { $$ = $1; }
+    | person UP_BAR sprite { $$ = addSprite($1, $3); }
     | container { $$ = $1; }
+    | container UP_BAR sprite { $$ = addSprite($1, $3); }
     | system { $$ = $1; }
+    | system UP_BAR sprite { $$ = addSprite($1, $3); }
     | system_boundary { $$ = $1; }
+    | system_boundary UP_BAR sprite {
+        char error_msg[200];
+        sprintf(error_msg, "System Boundaries cannot have sprites assigned");
+        yyerror(error_msg);
+    }
     ;
 
 // Handle the instanciation of relations between objects
@@ -252,7 +284,11 @@ system_content:
     }
     ;
 sprite: 
-    SPRITE EQ NAME { $$ = $3; }
+    SPRITE EQ NAME { 
+        char* concatenated = malloc(strlen($3) + 3); 
+        sprintf(concatenated, "\"%s\"", $3);
+        $$ = concatenated;
+    }
 %%
 
 int main() {
