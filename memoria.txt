@@ -56,8 +56,10 @@ EJEMPLO DE EJECUCIÓN ----------------
 !include DEVICONS/msql_server.puml
 !include FONTAWESOME/users.puml
 Person(Customer, "Customer", "People that need products", $sprite="users")
-Container(SPA, "SPA", "angular", "The main interface that the customer interacts with" , $sprite="angular")
-Container(API, "API", "java", "Handles all business logic" , $sprite="java")
+System_Boundary(OurSystem, "OurSystem") {
+	Container(SPA, "SPA", "angular", "The main interface that the customer interacts with" , $sprite="angular")
+	Container(API, "API", "java", "Handles all business logic" , $sprite="java")
+}
 Rel(Customer, SPA, "Uses", "https")
 Rel(SPA, API, "Uses", "https")
 @enduml
@@ -70,12 +72,14 @@ include: <DEVICONS/java.puml>;
 include: <DEVICONS/msql_server.puml>;
 include: <FONTAWESOME/users.puml>;
 Per: Customer, "People that need products" | sprite=users;
-Con: SPA, [angular], "The main interface that the customer interacts with" | sprite=angular;
-Con: API, [java], "Handles all business logic" | sprite=java;
+Boun: OurSystem {
+    Con: SPA, [angular], "The main interface that the customer interacts with" | sprite=angular;
+    Con: API, [java], "Handles all business logic" | sprite=java;
+};
 Customer -> Uses -> SPA, "https";
 SPA -> Uses -> API, "https";
 
-EN ESTE EJEMPLO LA NUEVA SINTAXIS SUPONE UN 12,49% DE REDUCCIÓN DE CÓDIGO EN COMPARACIÓN CON LA ORIGINAL.
+EN ESTE EJEMPLO LA NUEVA SINTAXIS SUPONE UN 12,65% DE REDUCCIÓN DE CÓDIGO EN COMPARACIÓN CON LA ORIGINAL.
 -------------------------------------
 #####################################
 ERRORES DETECTABLES -----------------
@@ -88,6 +92,8 @@ ERRORES DETECTABLES -----------------
 
 - La entidad System_Boundary no puede contener un sprite -> Esta entidad no puede tener un sprite, así que si se le intenta asignar uno, un error saltará.
 
+- Declaración mal formada -> Cuando los campos de una declaración están desordenados.
+
 -------------------------------------
 #####################################
 DECISIONES DESTACABLES --------------
@@ -95,7 +101,9 @@ DECISIONES DESTACABLES --------------
 
 - Para evitar conflictos de desplazamiento / reducción, he tenido que añadir más tokens de los inicialmente considerados. Esto se debe a que con los tokens limitados como al inicio, se generaban situaciones de ambigüedad sobre si reducir una regla o no.
 
-- En vez de indicar en qué línea se encuentra el error, he decidido señalar en qué declaración se encuentra. Considero que de esta manera, se podrían generar herramientas de edición posteriormente que permitieran navegar el documento saltando de declaración en declaración, en lugar de por líneas. 
+- En vez de indicar en qué línea se encuentra el error, he decidido señalar en qué declaración se encuentra. Considero que de esta manera, se podrían generar herramientas de edición posteriormente que permitieran navegar el documento saltando de declaración en declaración, en lugar de por líneas.
+
+- He decidido lanzar el error de declaración mal formada en lugar de aceptar múltiples órdenes de los argumentos de las declaraciones.
 
 -------------------------------------
 #####################################
@@ -133,4 +141,7 @@ Con esta prueba comprobamos que, efectivamente, se lanza un error indicando que 
 
 -- RepeatedID.txt --
 Este documento intenta declarar dos una persona con un Nombre que ya ha sido utilizado previamente ( Per: Customer | sprite=users; ). " Error at declaration number 10: You are trying to create a Person with a name (Customer) that is already being used. "
+
+-- DeclarationBadFormed.txt -- 
+Esta prueba representa un error al declarar una Presona, el error consiste en una declaración desordenada de esta entidad. "Error at declaration number 1: This Person declaration is not correct (Per: Name, "Optional Description")".
 
