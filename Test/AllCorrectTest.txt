@@ -1,0 +1,14 @@
+define: DEVICONS <https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/devicons>;
+define: FONTAWESOME <https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/font-awesome-5>;
+include: <DEVICONS/angular.puml>;
+include: <DEVICONS/java.puml>;
+include: <DEVICONS/msql_server.puml>;
+include: <FONTAWESOME/users.puml>;
+
+Per: Customer, "People that need products" | sprite=users;
+Boun: OurSystem {
+    Con: SPA, [angular], "The main interface that the customer interacts with" | sprite=angular;
+    Con: API, [java], "Handles all business logic" | sprite=java;
+};
+Customer -> Uses -> SPA, "https";
+SPA -> Uses -> API, "https";

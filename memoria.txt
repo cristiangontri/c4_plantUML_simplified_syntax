@@ -1,6 +1,16 @@
 Memoria C4_PLANTUML_SIMPLIFIED_SYNTAX
-
-Idea del Proyecto
+Autor -> Cristian González Trillo (cristian.gonzalez.trillo@udc.es)
+Documentos de la Práctica {
+    ./Test/ (Carpeta Test)
+    lexer.l 
+    parser.y 
+    memoria.txt
+    Makefile 
+}
+-------------------------------------
+############################################
+DESCRIPCIÓN DEL PROYECTO -------------------
+############################################
 
 El proyecto busca crear una sintaxis más simple a la actual para generar diagramas C4 mediante el uso de PlantUML. PlantUML es una tecnología que permite crear diagramas escribiendo en un documento de texto. Su sintaxis contiene abundantes paréntesis, además de alguna estructura que puede crear confusión.
 Por ejemplo -> Una relación entre dos entidades:
@@ -10,6 +20,11 @@ Por ejemplo -> Una relación entre dos entidades:
 
 Con la nueva sintaxis entendemos, desde el primer vistazo, qué queremos representar con la línea de código. Con la sintaxis original pueden surgir dudas ( ¿De qué entidad a qué entidad va la relación?).
 Como los diagramas C4 tienen una infinidad de elementos, el proyecto se ha acotado para incluir los más relevantes. 
+-------------------------------------
+#####################################
+ESTADO DEL PROYECTO -----------------
+#####################################
+
 Actualmente el proyecto contempla la creación de las siguientes entidades:
 
 Defines -> define: DEVICONS <https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/devicons>;
@@ -26,8 +41,10 @@ Fronteras de Sistema -> Boun: Nombre_Frontera {
                             Per: Marta;
                             Con: Nombre_Contenedor, [Contenido], "Descripcion Opcional";
                         };
-
-EJEMPLO DE EJECUCIÓN:
+-------------------------------------
+#####################################
+EJEMPLO DE EJECUCIÓN ----------------
+#####################################
 
 - Sintaxis Original:
 @startuml C4_Elements
@@ -59,3 +76,61 @@ Customer -> Uses -> SPA, "https";
 SPA -> Uses -> API, "https";
 
 EN ESTE EJEMPLO LA NUEVA SINTAXIS SUPONE UN 12,49% DE REDUCCIÓN DE CÓDIGO EN COMPARACIÓN CON LA ORIGINAL.
+-------------------------------------
+#####################################
+ERRORES DETECTABLES -----------------
+#####################################
+
+- Falta de un ';' -> Todas las líneas del documento de entrada deben terminar con un ';', ya que este símbolo define el EOL. 
+                     Pueden existir líneas en blanco dentro del programa, estas no deben contener ';'.
+
+- Dos entidades con el mismo nombre -> El nombre de una entidad es, a su vez, su identificador. No pueden existir dos entidades con el mismo nombre.
+
+- La entidad System_Boundary no puede contener un sprite -> Esta entidad no puede tener un sprite, así que si se le intenta asignar uno, un error saltará.
+
+-------------------------------------
+#####################################
+DECISIONES DESTACABLES --------------
+#####################################
+
+- Para evitar conflictos de desplazamiento / reducción, he tenido que añadir más tokens de los inicialmente considerados. Esto se debe a que con los tokens limitados como al inicio, se generaban situaciones de ambigüedad sobre si reducir una regla o no.
+
+- En vez de indicar en qué línea se encuentra el error, he decidido señalar en qué declaración se encuentra. Considero que de esta manera, se podrían generar herramientas de edición posteriormente que permitieran navegar el documento saltando de declaración en declaración, en lugar de por líneas. 
+
+-------------------------------------
+#####################################
+EJECUCIÓN ---------------------------
+#####################################
+
+## PREPARACIÓN DEL ENTORNO ##
+
+Se debe instalar PlantUML para generar el diagrama. El programa implementado genera el código PlantUML, pero para generar el consecuente diagrama es necesario instalar PlantUML y, si se utiliza VSCode, una extensión.
+
+PlantUML -> https://plantuml.com/es/
+VSCode -> https://code.visualstudio.com
+Extensión VSCode -> https://marketplace.visualstudio.com/items?itemName=jebbs.plantum
+
+
+## MAKEFILE ##
+
+En el MakeFile se encuentran varias opciones de ejecución:
+- Compile -> Únicamente compila el código, no lo ejecuta.
+- Run -> Ejecuta las pruebas que muestran el funcionamiento de la práctica.
+- Clean -> Elimina todo menos los documentos declarados al inicio de esta memoria como documentos de la práctica.
+- All -> Ejecuta secuencialmente Compile y Run, en ese orden.
+
+
+## TESTS ##
+
+-- AllCorrectTest.txt --
+Esta prueba crea un diagrama correctamente y contiene todos los elementos que se pueden generar en el estado actual del proyecto.
+
+-- BoundaryContainsSprite.txt --
+En esta prueba debe saltar un error " Error at declaration number 5: System Boundaries cannot have sprites assigned ", ya que una System_Boundary no puede tener asignada un Sprite.
+
+-- MissingSemiColonTest.txt --
+Con esta prueba comprobamos que, efectivamente, se lanza un error indicando que falta un ';' si se da esta situación. " Error at declaration number 2: Missing missing a ; ".
+
+-- RepeatedID.txt --
+Este documento intenta declarar dos una persona con un Nombre que ya ha sido utilizado previamente ( Per: Customer | sprite=users; ). " Error at declaration number 10: You are trying to create a Person with a name (Customer) that is already being used. "
+

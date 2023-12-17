@@ -1,0 +1,7 @@
+Per: Marta, "Optional Description";
+Con: Contenedor, [Technology, TE], "Optional Description";
+Sys: Sistema, "Optional Description";
+Marta -> Relacion -> Contenedor, "Optional Description";
+Boun: Boundary {
+    Per: Cristian, "Optional Description";
+} | sprite=angular;

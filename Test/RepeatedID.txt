@@ -8,5 +8,6 @@ include: <FONTAWESOME/users.puml>;
 Per: Customer, "People that need products" | sprite=users;
 Con: SPA, [angular], "The main interface that the customer interacts with" | sprite=angular;
 Con: API, [java], "Handles all business logic" | sprite=java;
+Per: Customer | sprite=users;
 Customer -> Uses -> SPA, "https";
 SPA -> Uses -> API, "https";

@@ -36,6 +36,30 @@ void boundaryWithSprite() {
     sprintf(error_msg, "System Boundaries cannot have sprites assigned");
     yyerror(error_msg);
 }
+
+void errorInDeclaration(int ty) {
+    char error_msg[200];
+    switch (ty) {
+        case 1: // Person
+            sprintf(error_msg, "This Person declaration is not correct (Per: Name, \"Optional Description\")");
+            break;
+        case 2: // Container
+            sprintf(error_msg, "This Container declaration is not correct (Cont: Name, [content], \"Optional Description\")");
+            break;
+        case 3: // System
+            sprintf(error_msg, "This System declaration is not correct (Sys: Name, \"Optional Description\")");
+            break;
+        case 4: // System_Boundary
+            sprintf(error_msg, "This System Boundary declaration is not correct (Boun: Name, \"Optional Description\" { ... })");
+            break;
+        case 5: // Relation
+            sprintf(error_msg, "This Relation declaration is not correct (From -> Name -> To, \"Optional Description\")");
+            break;
+        default:
+            break;
+    }
+    yyerror(error_msg);
+}
 // ------------------------------------------------------------------------------------------------------
 
 // STRING BUILDERS FOR CREATIONS ------------------------------------------------------------------------
@@ -218,18 +242,23 @@ creation:
 relation: 
       NAME ARROW NAME ARROW NAME                     { $$ = createRelationString($1, $5, $3, NULL); }
     | NAME ARROW NAME ARROW NAME COMMA DESCRIPTION   { $$ = createRelationString($1, $5, $3, $7);   }
+    | DESCRIPTION COMMA NAME ARROW NAME ARROW NAME   { errorInDeclaration(5);                       } // Error in Declaration
     ;
 
 // Handle creation of a Person
 person:
       PERSON_TAG COLON NAME                      { $$ = createPersonString($3, NULL); } // Person
     | PERSON_TAG COLON NAME COMMA DESCRIPTION    { $$ = createPersonString($3, $5);   } // Person & Description
+    | PERSON_TAG COLON DESCRIPTION COMMA NAME    { errorInDeclaration(1);             } // Error in declaration
     ;
 
 // Handle creation of a Container
 container:
       CONTAINER_TAG COLON NAME COMMA OPEN_BRACKET container_content CLOSE_BRACKET                   { $$ = createContainerString($3, $6, NULL); } // Container
     | CONTAINER_TAG COLON NAME COMMA OPEN_BRACKET container_content CLOSE_BRACKET COMMA DESCRIPTION { $$ = createContainerString($3, $6, $9);   } // Container  & Description
+    | CONTAINER_TAG COLON DESCRIPTION COMMA NAME COMMA OPEN_BRACKET container_content CLOSE_BRACKET { errorInDeclaration(2);                    } // Error in declaration
+    | CONTAINER_TAG COLON OPEN_BRACKET container_content CLOSE_BRACKET COMMA NAME COMMA DESCRIPTION { errorInDeclaration(2);                    } // Error in declaration
+    | CONTAINER_TAG COLON OPEN_BRACKET container_content CLOSE_BRACKET COMMA DESCRIPTION COMMA NAME { errorInDeclaration(2);                    } // Error in declaration
     ;
 
 container_content:
@@ -244,12 +273,14 @@ container_content:
 system:
       SYSTEM_TAG COLON NAME                   { $$ = createSystemString($3, NULL); } // System
     | SYSTEM_TAG COLON NAME COMMA DESCRIPTION { $$ = createSystemString($3, $5);   } // System & Description
+    | SYSTEM_TAG COLON DESCRIPTION COMMA NAME { errorInDeclaration(3);             } // Error in declaration
 
 
 // Handle creation of a System Boundary
 system_boundary:
      SYSTEM_BOUNDARY_TAG COLON NAME OPENING_BRACKET system_content CLOSING_BRACKET                    { $$ = createSystemBoundaryString($3, NULL, $5); } // System
     | SYSTEM_BOUNDARY_TAG COLON NAME COMMA DESCRIPTION OPENING_BRACKET system_content CLOSING_BRACKET { $$ = createSystemBoundaryString($3, $5, $7);   } // System & Description
+    | SYSTEM_BOUNDARY_TAG COLON DESCRIPTION COMMA NAME OPENING_BRACKET system_content CLOSING_BRACKET { errorInDeclaration(4);                         } // Error in Declaration
     ;
 system_content:
       system_content creation EOL { 
