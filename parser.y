@@ -2,10 +2,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#define MAX_INSTANCES 100
+#define MAX_INSTANCE_LENGTH 100
 extern int yylex();
 extern int yyabort();
 int instance = 0;
-char instances[100][20];
+char instances[MAX_INSTANCES][MAX_INSTANCE_LENGTH];
 FILE *outputFile;
 
 // ERRORS -----------------------------------------------------------------------------------------------
@@ -77,7 +79,7 @@ char* createPersonString(const char* name, const char* description) {
 
 char* createContainerString(const char* name, const char* content, const char* description) {
     newInstance("Container", name);
-    size_t length = strlen(name) + strlen(name) + strlen(content) + ((description != NULL) ? strlen(description) : 0) + 16;
+    size_t length = strlen(name) + strlen(name) + strlen(content) + ((description != NULL) ? strlen(description) + 10 : 0) + 16;
     char* result = (char*)malloc(length);
     if (description == NULL) {
         sprintf(result, "Container(%s, \"%s\", \"%s\")", name, name, content);
@@ -325,5 +327,6 @@ int main() {
     fprintf(outputFile, "@startuml C4_Elements\n!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml\n");
     yyparse();
     fprintf(outputFile, "@enduml");
+    printf("\033[0;32mCongratulations! Your file was correctly parsed to PlantUML\033[0m\n");
     return 0; 
 }

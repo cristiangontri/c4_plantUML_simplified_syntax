@@ -4,7 +4,6 @@ include: <DEVICONS/angular.puml>;
 include: <DEVICONS/java.puml>;
 include: <DEVICONS/msql_server.puml>;
 include: <FONTAWESOME/users.puml>;
-
 Per: Customer, "People that need products" | sprite=users;
 Boun: OurSystem {
     Con: SPA, [angular], "The main interface that the customer interacts with" | sprite=angular;
