@@ -3,10 +3,10 @@
 
 ## Documentos de la Práctica
 - ./Test/ (Carpeta Test)
-    - lexer.l 
-    - parser.y 
-    - memoria.txt
-    - Makefile 
+- lexer.l 
+- parser.y 
+- memoria.txt
+- Makefile 
 
 ---
 
@@ -15,7 +15,7 @@
 El proyecto tiene como objetivo crear una sintaxis más simple para generar diagramas C4 mediante PlantUML. PlantUML permite crear diagramas mediante texto, pero su sintaxis actual contiene paréntesis y estructuras que pueden resultar confusas. Por ejemplo:
 
 - **PlantUML:** `Rel(ent1, ent2, "Nombre relación")`
-- **Sintaxis del Proyecto:** `Rel: ent1 -> Nombre_Relación -> ent2`
+- **Sintaxis del Proyecto:** `ent1 -> Nombre_Relación -> ent2`
 
 La nueva sintaxis busca mejorar la comprensión directa del código. El proyecto se enfoca en los elementos más relevantes de los diagramas C4.
 
